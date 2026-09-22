@@ -1,0 +1,26 @@
+name: Verify Fase 1
+
+on:
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Comprobar configuracion inicial del servidor
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.HETZNER_HOST }}
+          username: ${{ secrets.HETZNER_USER }}
+          key: ${{ secrets.HETZNER_SSH_KEY }}
+          script: |
+            echo "== Usuario =="
+            whoami
+            echo "== Marca Fase 1 =="
+            cat /home/tesk/FASE1_COMPLETADA || echo "NO ENCONTRADA"
+            echo "== Firewall =="
+            sudo ufw status
+            echo "== fail2ban =="
+            sudo systemctl is-active fail2ban
+            echo "== SO =="
+            lsb_release -d
