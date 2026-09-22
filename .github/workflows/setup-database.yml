@@ -26,7 +26,6 @@ jobs:
           host: ${{ secrets.HETZNER_HOST }}
           username: ${{ secrets.HETZNER_USER }}
           key: ${{ secrets.HETZNER_SSH_KEY }}
-          envs: DB_APP_PASSWORD
           script: |
             set -e
             if ! command -v psql >/dev/null 2>&1; then
@@ -39,7 +38,8 @@ jobs:
             psql --version
 
             sudo -u postgres psql -tc "SELECT 1 FROM pg_roles WHERE rolname='tesk_app'" | grep -q 1 || \
-              sudo -u postgres psql -c "CREATE ROLE tesk_app WITH LOGIN PASSWORD '${DB_APP_PASSWORD}';"
+              sudo -u postgres psql -c "CREATE ROLE tesk_app WITH LOGIN;"
+            sudo -u postgres psql -c "ALTER ROLE tesk_app WITH PASSWORD '${{ secrets.DB_APP_PASSWORD }}';"
 
             sudo -u postgres psql -tc "SELECT 1 FROM pg_database WHERE datname='tesk_platform'" | grep -q 1 || \
               sudo -u postgres psql -c "CREATE DATABASE tesk_platform OWNER tesk_app;"
@@ -56,6 +56,9 @@ jobs:
             echo "== Tablas creadas =="
             sudo -u postgres psql -d tesk_platform -c "\dt"
 
+            echo "== Comprobando login con tesk_app =="
+            PGPASSWORD='${{ secrets.DB_APP_PASSWORD }}' psql -h 127.0.0.1 -U tesk_app -d tesk_platform -c "SELECT 'login OK' AS resultado;"
+
             echo "== Backup automatico diario =="
             sudo mkdir -p /var/backups/postgres
             sudo chown postgres:postgres /var/backups/postgres
@@ -64,3 +67,4 @@ jobs:
             sudo find /var/backups/postgres -name '*.sql.gz' -mtime +14 -delete || true
 
             echo "== FASE 2 COMPLETADA =="
+
