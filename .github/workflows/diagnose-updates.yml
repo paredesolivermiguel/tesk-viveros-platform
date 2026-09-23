@@ -22,26 +22,15 @@ jobs:
       - name: Instalar EAS CLI
         run: npm install -g eas-cli
 
-      - name: Listar canales
+      - name: Vincular la rama preview al canal preview
         working-directory: app
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-        run: eas channel:list --non-interactive || true
+        run: eas channel:edit preview --branch preview --non-interactive
 
-      - name: Listar ramas
+      - name: Confirmar vinculacion
         working-directory: app
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-        run: eas branch:list --non-interactive || true
+        run: eas channel:view preview --non-interactive
 
-      - name: Ver detalle del canal preview
-        working-directory: app
-        env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-        run: eas channel:view preview --non-interactive || true
-
-      - name: Listar actualizaciones publicadas
-        working-directory: app
-        env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-        run: eas update:list --branch preview --non-interactive || true
