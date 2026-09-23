@@ -1,0 +1,51 @@
+name: Migrate Data
+
+on:
+  workflow_dispatch:
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Exportar de WordPress
+        env:
+          WC_CONSUMER_KEY: ${{ secrets.WC_CONSUMER_KEY }}
+          WC_CONSUMER_SECRET: ${{ secrets.WC_CONSUMER_SECRET }}
+          WP_APP_USER: ${{ secrets.WP_APP_USER }}
+          WP_APP_PASSWORD: ${{ secrets.WP_APP_PASSWORD }}
+        run: python3 scripts/export_wordpress.py
+
+      - name: Transformar a SQL
+        run: python3 scripts/transform_and_import.py
+
+      - name: Copiar SQL al servidor
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.HETZNER_HOST }}
+          username: ${{ secrets.HETZNER_USER }}
+          key: ${{ secrets.HETZNER_SSH_KEY }}
+          source: "migration/data.sql"
+          target: "/tmp"
+          strip_components: 1
+
+      - name: Aplicar en PostgreSQL y validar
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.HETZNER_HOST }}
+          username: ${{ secrets.HETZNER_USER }}
+          key: ${{ secrets.HETZNER_SSH_KEY }}
+          script: |
+            set -e
+            echo "== Limpiando datos previos (carga repetible) =="
+            sudo -u postgres psql -d tesk_platform -c "TRUNCATE order_items, orders, product_prices, products, users, price_profiles, tenants RESTART IDENTITY CASCADE;"
+            echo "== Aplicando data.sql =="
+            sudo -u postgres psql -d tesk_platform -f /tmp/data.sql
+            echo "== FASE 3 COMPLETADA =="
