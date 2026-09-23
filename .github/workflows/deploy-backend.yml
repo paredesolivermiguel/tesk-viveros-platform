@@ -89,7 +89,17 @@ jobs:
               sudo apt-get install -y nodejs
             fi
             sudo systemctl restart tesk-backend
-            sleep 2
-            sudo systemctl status tesk-backend --no-pager -l | head -15
-            curl -sf http://localhost:3000/health && echo "" && echo "== BACKEND DESPLEGADO Y RESPONDIENDO =="
+            for i in 1 2 3 4 5 6 7 8 9 10; do
+              sleep 2
+              if curl -sf http://localhost:3000/health > /tmp/health_check.txt 2>&1; then
+                echo "== BACKEND DESPLEGADO Y RESPONDIENDO =="
+                cat /tmp/health_check.txt
+                exit 0
+              fi
+              echo "Esperando a que arranque (intento $i)..."
+            done
+            echo "El backend no respondio a tiempo, mostrando estado y ultimos logs:"
+            sudo systemctl status tesk-backend --no-pager -l | head -20
+            sudo journalctl -u tesk-backend --no-pager -n 30
+            exit 1
 
