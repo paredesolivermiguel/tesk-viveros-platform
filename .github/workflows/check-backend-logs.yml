@@ -17,5 +17,25 @@ jobs:
             echo "== Estado del servicio =="
             sudo systemctl status tesk-backend --no-pager -l | head -10
             echo ""
-            echo "== Ultimas 100 lineas de log =="
-            sudo journalctl -u tesk-backend --no-pager -n 100
+            echo "== Contenido de /etc/tesk-backend.env (sin mostrar la contrasena) =="
+            sudo sed 's/DATABASE_URL=postgresql:\/\/tesk_app:.*@/DATABASE_URL=postgresql:\/\/tesk_app:***OCULTA***@/' /etc/tesk-backend.env
+            echo ""
+            echo "== Probando login directo con esa contrasena =="
+            DBURL=$(sudo cat /etc/tesk-backend.env | grep DATABASE_URL | cut -d= -f2-)
+            PGPASS=$(echo "$DBURL" | sed -n 's|postgresql://tesk_app:\(.*\)@.*|\1|p')
+            PGPASSWORD="$PGPASS" psql -h 127.0.0.1 -U tesk_app -d tesk_platform -c "SELECT 'login desde .env: OK' AS resultado;" || echo "FALLO EL LOGIN CON LA CONTRASENA DEL .env"
+            echo ""
+            echo "== Restableciendo la contrasena por si acaso (idempotente) =="
+            sudo -u postgres psql -c "ALTER ROLE tesk_app WITH PASSWORD '${{ secrets.DB_APP_PASSWORD }}';"
+            echo "DATABASE_URL=postgresql://tesk_app:${{ secrets.DB_APP_PASSWORD }}@localhost:5432/tesk_platform" | sudo tee /etc/tesk-backend.env.new > /dev/null
+            sudo grep JWT_SECRET /etc/tesk-backend.env | sudo tee -a /etc/tesk-backend.env.new > /dev/null
+            sudo grep PORT /etc/tesk-backend.env | sudo tee -a /etc/tesk-backend.env.new > /dev/null
+            sudo mv /etc/tesk-backend.env.new /etc/tesk-backend.env
+            sudo systemctl restart tesk-backend
+            sleep 3
+            echo "== Estado tras reiniciar =="
+            sudo systemctl status tesk-backend --no-pager -l | head -15
+            echo ""
+            echo "== Ultimas 40 lineas de log =="
+            sudo journalctl -u tesk-backend --no-pager -n 40
+
