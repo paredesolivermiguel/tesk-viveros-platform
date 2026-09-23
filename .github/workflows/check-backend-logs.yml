@@ -52,6 +52,7 @@ jobs:
             echo "== Estado tras reiniciar =="
             sudo systemctl status tesk-backend --no-pager -l | head -10
             echo ""
-            echo "== Ultimas 30 lineas de log =="
-            sudo journalctl -u tesk-backend --no-pager -n 30
+            echo "== Reseteando contrasena de salicilato@gmail.com a pendiente =="
+            sudo -u postgres psql -d tesk_platform -c "UPDATE users SET password_hash = 'MIGRATED_RESET_REQUIRED' WHERE email = 'salicilato@gmail.com';"
+            sudo -u postgres psql -d tesk_platform -c "SELECT id, email, role FROM users WHERE email = 'salicilato@gmail.com';"
 
