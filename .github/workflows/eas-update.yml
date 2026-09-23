@@ -1,0 +1,34 @@
+name: Push OTA Update
+
+on:
+  workflow_dispatch:
+    inputs:
+      message:
+        description: 'Mensaje descriptivo de esta actualizacion'
+        required: true
+        default: 'Actualizacion de la app'
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Instalar dependencias
+        working-directory: app
+        run: npm install --no-audit --no-fund
+
+      - name: Instalar EAS CLI
+        run: npm install -g eas-cli
+
+      - name: Publicar actualizacion OTA
+        working-directory: app
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: eas update --branch preview --message "${{ github.event.inputs.message }}" --non-interactive
