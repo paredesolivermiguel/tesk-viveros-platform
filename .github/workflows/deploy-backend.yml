@@ -32,11 +32,9 @@ jobs:
         working-directory: backend
         run: npm run build
 
-      - name: Empaquetar
+      - name: Empaquetar en un unico archivo
         working-directory: backend
-        run: |
-          mkdir -p /tmp/paquete
-          cp -r dist node_modules prisma package.json /tmp/paquete/
+        run: tar -czf tesk-backend.tar.gz dist node_modules prisma package.json
 
       - name: Copiar paquete al servidor
         uses: appleboy/scp-action@v0.1.7
@@ -44,11 +42,9 @@ jobs:
           host: ${{ secrets.HETZNER_HOST }}
           username: ${{ secrets.HETZNER_USER }}
           key: ${{ secrets.HETZNER_SSH_KEY }}
-          source: "dist/,node_modules/,prisma/,package.json"
-          target: "/tmp/tesk-backend-paquete"
-          strip_components: 0
-          overwrite: true
-          rm: true
+          source: "backend/tesk-backend.tar.gz"
+          target: "/tmp"
+          strip_components: 1
 
       - name: Desplegar y reiniciar servicio
         uses: appleboy/ssh-action@v1.0.3
@@ -60,7 +56,8 @@ jobs:
           script: |
             set -e
             sudo mkdir -p /opt/tesk-backend
-            sudo rsync -a --delete /tmp/tesk-backend-paquete/ /opt/tesk-backend/
+            sudo rm -rf /opt/tesk-backend/*
+            sudo tar -xzf /tmp/tesk-backend.tar.gz -C /opt/tesk-backend
             if [ ! -f /etc/tesk-backend.env ]; then
               echo "DATABASE_URL=postgresql://tesk_app:${DB_APP_PASSWORD}@localhost:5432/tesk_platform" | sudo tee /etc/tesk-backend.env
               echo "JWT_SECRET=$(openssl rand -hex 32)" | sudo tee -a /etc/tesk-backend.env
@@ -95,3 +92,4 @@ jobs:
             sleep 2
             sudo systemctl status tesk-backend --no-pager -l | head -15
             curl -sf http://localhost:3000/health && echo "" && echo "== BACKEND DESPLEGADO Y RESPONDIENDO =="
+
