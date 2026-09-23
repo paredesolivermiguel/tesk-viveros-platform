@@ -1,6 +1,6 @@
 // URL del backend TESK. Durante el desarrollo/pruebas apunta a la IP del
 // servidor de Hetzner; cuando haya dominio propio, se cambia aqui.
-const BASE_URL = 'http://2.28.104.6:3000';
+const BASE_URL = 'https://api.viverossimonharo.es';
 
 async function request(path: string, options: RequestInit = {}, token?: string | null) {
   const headers: Record<string, string> = {
