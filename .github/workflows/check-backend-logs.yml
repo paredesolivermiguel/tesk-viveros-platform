@@ -1,0 +1,21 @@
+name: Check Backend Logs
+
+on:
+  workflow_dispatch:
+
+jobs:
+  logs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ver ultimos logs del backend
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.HETZNER_HOST }}
+          username: ${{ secrets.HETZNER_USER }}
+          key: ${{ secrets.HETZNER_SSH_KEY }}
+          script: |
+            echo "== Estado del servicio =="
+            sudo systemctl status tesk-backend --no-pager -l | head -10
+            echo ""
+            echo "== Ultimas 100 lineas de log =="
+            sudo journalctl -u tesk-backend --no-pager -n 100
