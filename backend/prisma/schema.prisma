@@ -1,0 +1,145 @@
+// Esquema Prisma - mapea exactamente las tablas ya creadas en PostgreSQL
+// (db/schema.sql). No usar `prisma migrate dev` para crear estas tablas:
+// ya existen; usar `prisma db pull` para mantener sincronizado si cambian
+// a mano, o migraciones nuevas para cambios futuros.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Tenant {
+  id       Int      @id @default(autoincrement())
+  name     String
+  slug     String   @unique
+  domain   String?
+  logoUrl  String?  @map("logo_url")
+  active   Boolean  @default(true)
+  plan     String   @default("basico")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  priceProfiles PriceProfile[]
+  zones         Zone[]
+  users         User[]
+  products      Product[]
+  orders        Order[]
+
+  @@map("tenants")
+}
+
+model PriceProfile {
+  id       Int    @id @default(autoincrement())
+  tenantId Int    @map("tenant_id")
+  name     String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  users  User[]
+  prices ProductPrice[]
+
+  @@unique([tenantId, name])
+  @@map("price_profiles")
+}
+
+model Zone {
+  id            Int     @id @default(autoincrement())
+  tenantId      Int     @map("tenant_id")
+  name          String
+  deliveryText  String? @map("delivery_text")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  users  User[]
+
+  @@map("zones")
+}
+
+model User {
+  id             Int      @id @default(autoincrement())
+  tenantId       Int      @map("tenant_id")
+  email          String
+  passwordHash   String   @map("password_hash")
+  role           String   @default("cliente")
+  priceProfileId Int?     @map("price_profile_id")
+  zoneId         Int?     @map("zone_id")
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  tenant       Tenant        @relation(fields: [tenantId], references: [id])
+  priceProfile PriceProfile? @relation(fields: [priceProfileId], references: [id])
+  zone         Zone?         @relation(fields: [zoneId], references: [id])
+  orders       Order[]
+
+  @@unique([tenantId, email])
+  @@map("users")
+}
+
+model Product {
+  id             Int      @id @default(autoincrement())
+  tenantId       Int      @map("tenant_id")
+  name           String
+  description    String?
+  imageUrl       String?  @map("image_url")
+  active         Boolean  @default(true)
+  trayEnabled    Boolean  @default(false) @map("tray_enabled")
+  unitsPerTray   Int      @default(1) @map("units_per_tray")
+  isOffer        Boolean  @default(false) @map("is_offer")
+  isNew          Boolean  @default(false) @map("is_new")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  tenant     Tenant          @relation(fields: [tenantId], references: [id])
+  prices     ProductPrice[]
+  orderItems OrderItem[]
+
+  @@map("products")
+}
+
+model ProductPrice {
+  id             Int   @id @default(autoincrement())
+  productId      Int   @map("product_id")
+  priceProfileId Int   @map("price_profile_id")
+  price          Decimal @db.Decimal(10, 2)
+
+  product      Product      @relation(fields: [productId], references: [id])
+  priceProfile PriceProfile @relation(fields: [priceProfileId], references: [id])
+
+  @@unique([productId, priceProfileId])
+  @@map("product_prices")
+}
+
+model Order {
+  id            Int      @id @default(autoincrement())
+  tenantId      Int      @map("tenant_id")
+  userId        Int      @map("user_id")
+  paymentMethod String   @map("payment_method")
+  vatAmount     Decimal  @default(0) @db.Decimal(10, 2) @map("vat_amount")
+  totalAmount   Decimal  @default(0) @db.Decimal(10, 2) @map("total_amount")
+  status        String   @default("recibido")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  tenant Tenant      @relation(fields: [tenantId], references: [id])
+  user   User        @relation(fields: [userId], references: [id])
+  items  OrderItem[]
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id          Int     @id @default(autoincrement())
+  orderId     Int     @map("order_id")
+  productId   Int     @map("product_id")
+  trays       Int     @default(0)
+  looseUnits  Int     @default(0) @map("loose_units")
+  totalUnits  Int     @map("total_units")
+  unitPrice   Decimal @db.Decimal(10, 2) @map("unit_price")
+  lineTotal   Decimal @db.Decimal(10, 2) @map("line_total")
+
+  order   Order   @relation(fields: [orderId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+
+  @@map("order_items")
+}
