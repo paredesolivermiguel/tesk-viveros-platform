@@ -52,14 +52,16 @@ export default function CatalogScreen({ navigation }: any) {
           {user?.email} · {roleLabel}
         </Text>
         <View style={styles.headerButtons}>
-          <TouchableOpacity onPress={() => navigation.navigate('Cart')} style={styles.cartButton}>
-            <Text style={styles.cartButtonText}>Carrito ({cartCount})</Text>
-          </TouchableOpacity>
           <TouchableOpacity onPress={() => navigation.navigate('Orders')} style={styles.ordersButton}>
             <Text style={styles.ordersButtonText}>{user?.role === 'gestor' ? 'Todos los pedidos' : 'Mis pedidos'}</Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={logout}>
-            <Text style={styles.logout}>Salir</Text>
+          {user?.role === 'gestor' && (
+            <TouchableOpacity onPress={() => navigation.navigate('AdminPanel')} style={styles.panelButton}>
+              <Text style={styles.panelButtonText}>Panel de Gestión</Text>
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity onPress={() => navigation.navigate('Account')}>
+            <Text style={styles.accountLink}>Mi cuenta</Text>
           </TouchableOpacity>
         </View>
         <TextInput
@@ -88,6 +90,10 @@ export default function CatalogScreen({ navigation }: any) {
           ListEmptyComponent={<Text style={styles.empty}>No se encontraron productos.</Text>}
         />
       )}
+
+      <TouchableOpacity style={styles.fab} onPress={() => navigation.navigate('Cart')}>
+        <Text style={styles.fabText}>🛒 Carrito ({cartCount})</Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -106,4 +112,22 @@ const styles = StyleSheet.create({
   search: { borderWidth: 1, borderColor: '#ccc', borderRadius: 8, padding: 10, fontSize: 14 },
   error: { color: 'red', textAlign: 'center', marginTop: 40, paddingHorizontal: 20 },
   empty: { color: '#999', textAlign: 'center', marginTop: 40 },
+  panelButton: { backgroundColor: '#1d4ed8', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 6 },
+  panelButtonText: { color: '#fff', fontWeight: '600', fontSize: 12 },
+  accountLink: { color: '#333', fontSize: 13, fontWeight: '600' },
+  fab: {
+    position: 'absolute',
+    right: 16,
+    bottom: 20,
+    backgroundColor: '#2f6b45',
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+    borderRadius: 28,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+  },
+  fabText: { color: '#fff', fontWeight: '700', fontSize: 14 },
 });

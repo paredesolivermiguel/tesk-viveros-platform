@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { StatusBar } from 'expo-status-bar';
 import { ActivityIndicator, View } from 'react-native';
+import * as Updates from 'expo-updates';
 
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { CartProvider } from './src/context/CartContext';
@@ -14,6 +15,8 @@ import CartScreen from './src/screens/CartScreen';
 import CheckoutScreen from './src/screens/CheckoutScreen';
 import OrdersScreen from './src/screens/OrdersScreen';
 import ProductDetailScreen from './src/screens/ProductDetailScreen';
+import AccountScreen from './src/screens/AccountScreen';
+import AdminPanelScreen from './src/screens/AdminPanelScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -37,6 +40,8 @@ function RootNavigator() {
           <Stack.Screen name="Checkout" component={CheckoutScreen} />
           <Stack.Screen name="Orders" component={OrdersScreen} />
           <Stack.Screen name="ProductDetail" component={ProductDetailScreen} />
+          <Stack.Screen name="Account" component={AccountScreen} />
+          <Stack.Screen name="AdminPanel" component={AdminPanelScreen} />
         </>
       ) : (
         <>
@@ -50,6 +55,20 @@ function RootNavigator() {
 }
 
 export default function App() {
+  useEffect(() => {
+    (async () => {
+      try {
+        const result = await Updates.checkForUpdateAsync();
+        if (result.isAvailable) {
+          await Updates.fetchUpdateAsync();
+          await Updates.reloadAsync();
+        }
+      } catch {
+        // Sin conexion o sin build con soporte de actualizaciones: seguimos con la version actual.
+      }
+    })();
+  }, []);
+
   return (
     <AuthProvider>
       <CartProvider>
