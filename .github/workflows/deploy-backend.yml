@@ -52,17 +52,24 @@ jobs:
           host: ${{ secrets.HETZNER_HOST }}
           username: ${{ secrets.HETZNER_USER }}
           key: ${{ secrets.HETZNER_SSH_KEY }}
-          envs: DB_APP_PASSWORD
           script: |
             set -e
             sudo mkdir -p /opt/tesk-backend
             sudo rm -rf /opt/tesk-backend/*
             sudo tar -xzf /tmp/tesk-backend.tar.gz -C /opt/tesk-backend
-            if [ ! -f /etc/tesk-backend.env ]; then
-              echo "DATABASE_URL=postgresql://tesk_app:${DB_APP_PASSWORD}@localhost:5432/tesk_platform" | sudo tee /etc/tesk-backend.env
-              echo "JWT_SECRET=$(openssl rand -hex 32)" | sudo tee -a /etc/tesk-backend.env
-              echo "PORT=3000" | sudo tee -a /etc/tesk-backend.env
+            EXISTING_JWT_SECRET=""
+            if [ -f /etc/tesk-backend.env ]; then
+              EXISTING_JWT_SECRET=$(grep '^JWT_SECRET=' /etc/tesk-backend.env | cut -d= -f2-)
             fi
+            if [ -z "$EXISTING_JWT_SECRET" ]; then
+              EXISTING_JWT_SECRET=$(openssl rand -hex 32)
+            fi
+            {
+              echo "DATABASE_URL=postgresql://tesk_app:${{ secrets.DB_APP_PASSWORD }}@localhost:5432/tesk_platform"
+              echo "JWT_SECRET=${EXISTING_JWT_SECRET}"
+              echo "PORT=3000"
+            } | sudo tee /etc/tesk-backend.env > /dev/null
+            echo "== .env regenerado (DATABASE_URL siempre se actualiza; JWT_SECRET se conserva si ya existia) =="
             if [ ! -f /etc/systemd/system/tesk-backend.service ]; then
               sudo tee /etc/systemd/system/tesk-backend.service > /dev/null << 'UNIT'
             [Unit]
