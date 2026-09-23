@@ -36,6 +36,22 @@ jobs:
             echo "== Estado tras reiniciar =="
             sudo systemctl status tesk-backend --no-pager -l | head -15
             echo ""
-            echo "== Ultimas 40 lineas de log =="
-            sudo journalctl -u tesk-backend --no-pager -n 40
+            echo "== Concediendo permisos a tesk_app sobre todas las tablas =="
+            sudo -u postgres psql -d tesk_platform -c "GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO tesk_app;"
+            sudo -u postgres psql -d tesk_platform -c "GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO tesk_app;"
+            sudo -u postgres psql -d tesk_platform -c "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO tesk_app;"
+            sudo -u postgres psql -d tesk_platform -c "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO tesk_app;"
+
+            echo "== Probando SELECT en users como tesk_app =="
+            DBURL=$(sudo cat /etc/tesk-backend.env | grep DATABASE_URL | cut -d= -f2-)
+            PGPASS=$(echo "$DBURL" | sed -n 's|postgresql://tesk_app:\(.*\)@.*|\1|p')
+            PGPASSWORD="$PGPASS" psql -h 127.0.0.1 -U tesk_app -d tesk_platform -c "SELECT count(*) FROM users;"
+
+            sudo systemctl restart tesk-backend
+            sleep 3
+            echo "== Estado tras reiniciar =="
+            sudo systemctl status tesk-backend --no-pager -l | head -10
+            echo ""
+            echo "== Ultimas 30 lineas de log =="
+            sudo journalctl -u tesk-backend --no-pager -n 30
 
