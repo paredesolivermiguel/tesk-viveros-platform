@@ -1,0 +1,97 @@
+name: Deploy Backend
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/deploy-backend.yml'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Instalar dependencias
+        working-directory: backend
+        run: npm install --no-audit --no-fund
+
+      - name: Generar cliente Prisma
+        working-directory: backend
+        run: npx prisma generate
+
+      - name: Compilar TypeScript
+        working-directory: backend
+        run: npm run build
+
+      - name: Empaquetar
+        working-directory: backend
+        run: |
+          mkdir -p /tmp/paquete
+          cp -r dist node_modules prisma package.json /tmp/paquete/
+
+      - name: Copiar paquete al servidor
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.HETZNER_HOST }}
+          username: ${{ secrets.HETZNER_USER }}
+          key: ${{ secrets.HETZNER_SSH_KEY }}
+          source: "dist/,node_modules/,prisma/,package.json"
+          target: "/tmp/tesk-backend-paquete"
+          strip_components: 0
+          overwrite: true
+          rm: true
+
+      - name: Desplegar y reiniciar servicio
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.HETZNER_HOST }}
+          username: ${{ secrets.HETZNER_USER }}
+          key: ${{ secrets.HETZNER_SSH_KEY }}
+          envs: DB_APP_PASSWORD
+          script: |
+            set -e
+            sudo mkdir -p /opt/tesk-backend
+            sudo rsync -a --delete /tmp/tesk-backend-paquete/ /opt/tesk-backend/
+            if [ ! -f /etc/tesk-backend.env ]; then
+              echo "DATABASE_URL=postgresql://tesk_app:${DB_APP_PASSWORD}@localhost:5432/tesk_platform" | sudo tee /etc/tesk-backend.env
+              echo "JWT_SECRET=$(openssl rand -hex 32)" | sudo tee -a /etc/tesk-backend.env
+              echo "PORT=3000" | sudo tee -a /etc/tesk-backend.env
+            fi
+            if [ ! -f /etc/systemd/system/tesk-backend.service ]; then
+              sudo tee /etc/systemd/system/tesk-backend.service > /dev/null << 'UNIT'
+            [Unit]
+            Description=TESK backend API
+            After=network.target postgresql.service
+
+            [Service]
+            Type=simple
+            EnvironmentFile=/etc/tesk-backend.env
+            WorkingDirectory=/opt/tesk-backend
+            ExecStart=/usr/bin/node /opt/tesk-backend/dist/main.js
+            Restart=on-failure
+            User=tesk
+
+            [Install]
+            WantedBy=multi-user.target
+            UNIT
+              sudo systemctl daemon-reload
+              sudo systemctl enable tesk-backend
+            fi
+            sudo chown -R tesk:tesk /opt/tesk-backend
+            if ! command -v node >/dev/null 2>&1; then
+              curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+              sudo apt-get install -y nodejs
+            fi
+            sudo systemctl restart tesk-backend
+            sleep 2
+            sudo systemctl status tesk-backend --no-pager -l | head -15
+            curl -sf http://localhost:3000/health && echo "" && echo "== BACKEND DESPLEGADO Y RESPONDIENDO =="
