@@ -1,0 +1,66 @@
+name: Setup HTTPS
+
+on:
+  workflow_dispatch:
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Instalar Nginx, configurar proxy y certificado SSL
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.HETZNER_HOST }}
+          username: ${{ secrets.HETZNER_USER }}
+          key: ${{ secrets.HETZNER_SSH_KEY }}
+          script: |
+            set -e
+            if ! command -v nginx >/dev/null 2>&1; then
+              sudo apt-get update
+              sudo apt-get install -y nginx
+            fi
+
+            sudo tee /etc/nginx/sites-available/api-tesk > /dev/null << 'NGINXCONF'
+            server {
+                listen 80;
+                server_name api.viverossimonharo.es;
+
+                location / {
+                    proxy_pass http://127.0.0.1:3000;
+                    proxy_http_version 1.1;
+                    proxy_set_header Upgrade $http_upgrade;
+                    proxy_set_header Connection 'upgrade';
+                    proxy_set_header Host $host;
+                    proxy_set_header X-Real-IP $remote_addr;
+                    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                    proxy_set_header X-Forwarded-Proto $scheme;
+                    proxy_cache_bypass $http_upgrade;
+                }
+            }
+            NGINXCONF
+
+            sudo ln -sf /etc/nginx/sites-available/api-tesk /etc/nginx/sites-enabled/api-tesk
+            sudo rm -f /etc/nginx/sites-enabled/default
+            sudo nginx -t
+            sudo systemctl restart nginx
+            sudo systemctl enable nginx
+
+            if ! command -v certbot >/dev/null 2>&1; then
+              sudo apt-get install -y certbot python3-certbot-nginx
+            fi
+
+            echo "== Comprobando que el DNS ya resuelve =="
+            for i in 1 2 3 4 5 6 7 8 9 10; do
+              if host api.viverossimonharo.es | grep -q "2.28.104.6"; then
+                echo "DNS OK"
+                break
+              fi
+              echo "DNS aun no propagado, esperando (intento $i)..."
+              sleep 10
+            done
+
+            sudo certbot --nginx -d api.viverossimonharo.es --non-interactive --agree-tos -m tesk@viverossimonharo.es --redirect
+
+            echo "== Comprobando HTTPS =="
+            curl -sf https://api.viverossimonharo.es/health && echo "" && echo "== HTTPS FUNCIONANDO =="
+
