@@ -102,12 +102,14 @@ def main():
         units_per_tray = int(num(meta_get(meta, "_shz_unidades_por_bandeja"), 1) or 1)
         is_offer = (meta_get(meta, "_shz_oferta") == "yes")
         is_new = (meta_get(meta, "_shz_novedad") == "yes")
+        sun_info = meta_get(meta, "_shz_sol")
+        water_info = meta_get(meta, "_shz_agua")
 
         lines.append(
             f"INSERT INTO products (id, tenant_id, name, description, image_url, "
-            f"active, tray_enabled, units_per_tray, is_offer, is_new) VALUES "
+            f"active, tray_enabled, units_per_tray, is_offer, is_new, sun_info, water_info) VALUES "
             f"({i}, {TENANT_ID}, {dq(name)}, {dq(desc)}, {dq(image_url)}, "
-            f"{active}, {tray_enabled}, {units_per_tray}, {is_offer}, {is_new}) "
+            f"{active}, {tray_enabled}, {units_per_tray}, {is_offer}, {is_new}, {dq(sun_info)}, {dq(water_info)}) "
             f"ON CONFLICT (id) DO NOTHING;"
         )
 

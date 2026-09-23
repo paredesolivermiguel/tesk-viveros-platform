@@ -12,6 +12,7 @@ import CatalogScreen from './src/screens/CatalogScreen';
 import CartScreen from './src/screens/CartScreen';
 import CheckoutScreen from './src/screens/CheckoutScreen';
 import OrdersScreen from './src/screens/OrdersScreen';
+import ProductDetailScreen from './src/screens/ProductDetailScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -34,6 +35,7 @@ function RootNavigator() {
           <Stack.Screen name="Cart" component={CartScreen} />
           <Stack.Screen name="Checkout" component={CheckoutScreen} />
           <Stack.Screen name="Orders" component={OrdersScreen} />
+          <Stack.Screen name="ProductDetail" component={ProductDetailScreen} />
         </>
       ) : (
         <>

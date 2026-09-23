@@ -90,3 +90,7 @@ CREATE INDEX IF NOT EXISTS idx_products_tenant ON products(tenant_id);
 CREATE INDEX IF NOT EXISTS idx_users_tenant ON users(tenant_id);
 CREATE INDEX IF NOT EXISTS idx_orders_tenant ON orders(tenant_id);
 CREATE INDEX IF NOT EXISTS idx_order_items_order ON order_items(order_id);
+
+-- Migracion incremental: sol/agua (Fase de pulido post-lanzamiento)
+ALTER TABLE products ADD COLUMN IF NOT EXISTS sun_info TEXT;
+ALTER TABLE products ADD COLUMN IF NOT EXISTS water_info TEXT;

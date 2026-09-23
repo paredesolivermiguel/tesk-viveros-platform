@@ -89,6 +89,8 @@ model Product {
   unitsPerTray   Int      @default(1) @map("units_per_tray")
   isOffer        Boolean  @default(false) @map("is_offer")
   isNew          Boolean  @default(false) @map("is_new")
+  sunInfo        String?  @map("sun_info")
+  waterInfo      String?  @map("water_info")
   createdAt      DateTime @default(now()) @map("created_at")
 
   tenant     Tenant          @relation(fields: [tenantId], references: [id])

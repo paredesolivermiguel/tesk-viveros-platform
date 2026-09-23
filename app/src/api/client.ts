@@ -38,7 +38,8 @@ export const api = {
   setPassword: (email: string, newPassword: string): Promise<LoginResponse> =>
     request('/auth/set-password', { method: 'POST', body: JSON.stringify({ email, newPassword }) }),
 
-  catalog: (token: string) => request('/products', {}, token),
+  catalog: (token: string, search?: string) =>
+    request(`/products${search ? `?search=${encodeURIComponent(search)}` : ''}`, {}, token),
 
   createOrder: (
     token: string,

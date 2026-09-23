@@ -1,53 +1,73 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, FlatList, Text, StyleSheet, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
+import { View, FlatList, Text, StyleSheet, TouchableOpacity, ActivityIndicator, RefreshControl, TextInput } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { api } from '../api/client';
 import ProductCard from '../components/ProductCard';
 
 export default function CatalogScreen({ navigation }: any) {
-  const { token, logout } = useAuth();
+  const { token, user, logout } = useAuth();
   const { items } = useCart();
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
 
-  const load = useCallback(async () => {
-    if (!token) return;
-    try {
-      setError(null);
-      const data = await api.catalog(token);
-      setProducts(data);
-    } catch (e: any) {
-      setError(e.message);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [token]);
+  const load = useCallback(
+    async (q?: string) => {
+      if (!token) return;
+      try {
+        setError(null);
+        const data = await api.catalog(token, q);
+        setProducts(data);
+      } catch (e: any) {
+        setError(e.message);
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
+      }
+    },
+    [token],
+  );
 
   useEffect(() => {
     load();
   }, [load]);
 
+  useEffect(() => {
+    const t = setTimeout(() => load(search || undefined), 400);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search]);
+
   const cartCount = items.length;
+  const roleLabel = user?.role === 'gestor' ? 'Gestor' : 'Cliente';
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Catalogo</Text>
+        <Text style={styles.title}>Catálogo</Text>
+        <Text style={styles.account}>
+          {user?.email} · {roleLabel}
+        </Text>
         <View style={styles.headerButtons}>
           <TouchableOpacity onPress={() => navigation.navigate('Cart')} style={styles.cartButton}>
             <Text style={styles.cartButtonText}>Carrito ({cartCount})</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={() => navigation.navigate('Orders')} style={styles.ordersButton}>
-            <Text style={styles.ordersButtonText}>Mis pedidos</Text>
+            <Text style={styles.ordersButtonText}>{user?.role === 'gestor' ? 'Todos los pedidos' : 'Mis pedidos'}</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={logout}>
             <Text style={styles.logout}>Salir</Text>
           </TouchableOpacity>
         </View>
+        <TextInput
+          style={styles.search}
+          placeholder="Buscar producto..."
+          value={search}
+          onChangeText={setSearch}
+        />
       </View>
 
       {loading ? (
@@ -59,8 +79,13 @@ export default function CatalogScreen({ navigation }: any) {
           data={products}
           keyExtractor={(item) => String(item.id)}
           contentContainerStyle={{ padding: 12 }}
-          renderItem={({ item }) => <ProductCard product={item} />}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} />}
+          renderItem={({ item }) => (
+            <ProductCard product={item} onPress={() => navigation.navigate('ProductDetail', { product: item })} />
+          )}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(search || undefined); }} />
+          }
+          ListEmptyComponent={<Text style={styles.empty}>No se encontraron productos.</Text>}
         />
       )}
     </View>
@@ -70,12 +95,15 @@ export default function CatalogScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f7f7f7' },
   header: { padding: 16, paddingTop: 50, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#eee' },
-  title: { fontSize: 24, fontWeight: '700', marginBottom: 10 },
-  headerButtons: { flexDirection: 'row', alignItems: 'center', gap: 16 },
+  title: { fontSize: 24, fontWeight: '700', marginBottom: 2 },
+  account: { fontSize: 12, color: '#888', marginBottom: 10 },
+  headerButtons: { flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 10 },
   cartButton: { backgroundColor: '#2f6b45', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6 },
   cartButtonText: { color: '#fff', fontWeight: '600', fontSize: 13 },
   ordersButton: { paddingHorizontal: 4 },
   ordersButtonText: { color: '#2f6b45', fontWeight: '600', fontSize: 13 },
   logout: { color: '#999', fontSize: 13 },
+  search: { borderWidth: 1, borderColor: '#ccc', borderRadius: 8, padding: 10, fontSize: 14 },
   error: { color: 'red', textAlign: 'center', marginTop: 40, paddingHorizontal: 20 },
+  empty: { color: '#999', textAlign: 'center', marginTop: 40 },
 });
