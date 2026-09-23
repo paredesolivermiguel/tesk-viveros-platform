@@ -22,6 +22,12 @@ jobs:
       - name: Instalar EAS CLI
         run: npm install -g eas-cli
 
+      - name: Vincular proyecto con la cuenta de Expo
+        working-directory: app
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: eas init --non-interactive --force
+
       - name: Vincular la rama preview al canal preview
         working-directory: app
         env:
