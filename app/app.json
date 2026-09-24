@@ -29,7 +29,13 @@
     "updates": {
       "enabled": true,
       "checkAutomatically": "ON_LOAD",
-      "fallbackToCacheTimeout": 0
+      "fallbackToCacheTimeout": 0,
+      "url": "https://u.expo.dev/50c13e66-738b-4c53-95a4-1ef99fef270c"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "50c13e66-738b-4c53-95a4-1ef99fef270c"
+      }
     }
   }
 }
