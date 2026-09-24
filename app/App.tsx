@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { StatusBar } from 'expo-status-bar';
-import { ActivityIndicator, View, Text, StyleSheet } from 'react-native';
-import * as Updates from 'expo-updates';
+import { ActivityIndicator, View } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { CartProvider } from './src/context/CartContext';
@@ -54,70 +54,17 @@ function RootNavigator() {
   );
 }
 
-/**
- * Banner de diagnostico temporal: muestra en pantalla, sin necesidad de
- * logs ni cable USB, exactamente que esta pasando con las
- * actualizaciones OTA. Se quitara en cuanto confirmemos que todo
- * funciona.
- */
-function UpdateDebugBanner() {
-  const [status, setStatus] = useState('Comprobando...');
-
-  useEffect(() => {
-    (async () => {
-      try {
-        const info = [
-          `updateId: ${Updates.updateId ?? 'NINGUNO (build nativo)'}`,
-          `channel: ${Updates.channel ?? 'desconocido'}`,
-          `runtimeVersion: ${Updates.runtimeVersion ?? 'desconocido'}`,
-          `isEmbedded: ${Updates.isEmbeddedLaunch}`,
-        ].join(' | ');
-
-        const result = await Updates.checkForUpdateAsync();
-        const checkInfo = result.isAvailable
-          ? `HAY ACTUALIZACION DISPONIBLE (manifest: ${result.manifest ? 'si' : 'no'})`
-          : 'No hay actualizacion nueva';
-
-        setStatus(`${info}\n${checkInfo}`);
-
-        if (result.isAvailable) {
-          await Updates.fetchUpdateAsync();
-          setStatus((prev) => `${prev}\nDescargada. Reiniciando...`);
-          await Updates.reloadAsync();
-        }
-      } catch (e: any) {
-        setStatus((prev) => `${prev}\nERROR: ${e?.message ?? String(e)}`);
-      }
-    })();
-  }, []);
-
-  return (
-    <View style={styles.banner}>
-      <Text style={styles.bannerText}>{status}</Text>
-    </View>
-  );
-}
-
 export default function App() {
   return (
-    <AuthProvider>
-      <CartProvider>
-        <NavigationContainer>
-          <StatusBar style="dark" />
-          <UpdateDebugBanner />
-          <RootNavigator />
-        </NavigationContainer>
-      </CartProvider>
-    </AuthProvider>
+    <SafeAreaProvider>
+      <AuthProvider>
+        <CartProvider>
+          <NavigationContainer>
+            <StatusBar style="dark" />
+            <RootNavigator />
+          </NavigationContainer>
+        </CartProvider>
+      </AuthProvider>
+    </SafeAreaProvider>
   );
 }
-
-const styles = StyleSheet.create({
-  banner: {
-    backgroundColor: '#111',
-    paddingTop: 40,
-    paddingBottom: 8,
-    paddingHorizontal: 10,
-  },
-  bannerText: { color: '#0f0', fontSize: 10, fontFamily: 'monospace' },
-});

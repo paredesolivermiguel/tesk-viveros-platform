@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, FlatList, Text, StyleSheet, TouchableOpacity, ActivityIndicator, RefreshControl, TextInput } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { api } from '../api/client';
@@ -8,6 +9,7 @@ import ProductCard from '../components/ProductCard';
 export default function CatalogScreen({ navigation }: any) {
   const { token, user, logout } = useAuth();
   const { items } = useCart();
+  const insets = useSafeAreaInsets();
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -92,7 +94,10 @@ export default function CatalogScreen({ navigation }: any) {
         />
       )}
 
-      <TouchableOpacity style={styles.fab} onPress={() => navigation.navigate('Cart')}>
+      <TouchableOpacity
+        style={[styles.fab, { bottom: 20 + insets.bottom }]}
+        onPress={() => navigation.navigate('Cart')}
+      >
         <Text style={styles.fabText}>🛒 Carrito ({cartCount})</Text>
       </TouchableOpacity>
     </View>
@@ -120,11 +125,12 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 16,
     bottom: 20,
+    zIndex: 20,
     backgroundColor: '#2f6b45',
     paddingHorizontal: 18,
     paddingVertical: 12,
     borderRadius: 28,
-    elevation: 4,
+    elevation: 6,
     shadowColor: '#000',
     shadowOpacity: 0.2,
     shadowRadius: 6,
