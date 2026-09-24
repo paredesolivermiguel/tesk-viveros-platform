@@ -85,7 +85,11 @@ export default function CatalogScreen({ navigation }: any) {
           contentContainerStyle={{ padding: 12 }}
           keyboardShouldPersistTaps="handled"
           renderItem={({ item }) => (
-            <ProductCard product={item} onPress={() => navigation.navigate('ProductDetail', { product: item })} />
+            <ProductCard
+              product={item}
+              onPress={() => navigation.navigate('ProductDetail', { product: item })}
+              showCartControls={user?.role !== 'gestor'}
+            />
           )}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(search || undefined); }} />
@@ -94,12 +98,14 @@ export default function CatalogScreen({ navigation }: any) {
         />
       )}
 
-      <TouchableOpacity
-        style={[styles.fab, { bottom: 20 + insets.bottom }]}
-        onPress={() => navigation.navigate('Cart')}
-      >
-        <Text style={styles.fabText}>🛒 Carrito ({cartCount})</Text>
-      </TouchableOpacity>
+      {user?.role !== 'gestor' && (
+        <TouchableOpacity
+          style={[styles.fab, { bottom: 20 + insets.bottom }]}
+          onPress={() => navigation.navigate('Cart')}
+        >
+          <Text style={styles.fabText}>🛒 Carrito ({cartCount})</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 }

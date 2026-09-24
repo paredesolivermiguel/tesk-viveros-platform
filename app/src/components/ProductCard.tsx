@@ -27,7 +27,15 @@ export function priceLabel(product: Product) {
   return product.price != null ? `${product.price.toFixed(2)} €/ud.` : 'Sin precio para tu perfil';
 }
 
-export default function ProductCard({ product, onPress }: { product: Product; onPress: () => void }) {
+export default function ProductCard({
+  product,
+  onPress,
+  showCartControls = true,
+}: {
+  product: Product;
+  onPress: () => void;
+  showCartControls?: boolean;
+}) {
   const { addOrUpdate, remove, items } = useCart();
   const inCart = items.find((i) => i.productId === product.id);
   const [unitsInput, setUnitsInput] = useState(String(inCart?.units ?? 0));
@@ -84,45 +92,49 @@ export default function ProductCard({ product, onPress }: { product: Product; on
         <Text style={styles.price}>{priceLabel(product)}</Text>
       </TouchableOpacity>
 
-      <View style={styles.row}>
-        <View style={styles.field}>
-          <Text style={styles.label}>Unidades sueltas</Text>
-          <TextInput
-            style={styles.qtyInput}
-            keyboardType="number-pad"
-            returnKeyType="done"
-            value={unitsInput}
-            onChangeText={setUnitsInput}
-          />
-        </View>
-        {product.trayEnabled ? (
-          <View style={styles.field}>
-            <Text style={styles.label}>Bandejas ({product.unitsPerTray} ud.)</Text>
-            <TextInput
-              style={styles.qtyInput}
-              keyboardType="number-pad"
-              returnKeyType="done"
-              value={traysInput}
-              onChangeText={setTraysInput}
-            />
+      {showCartControls && (
+        <>
+          <View style={styles.row}>
+            <View style={styles.field}>
+              <Text style={styles.label}>Unidades sueltas</Text>
+              <TextInput
+                style={styles.qtyInput}
+                keyboardType="number-pad"
+                returnKeyType="done"
+                value={unitsInput}
+                onChangeText={setUnitsInput}
+              />
+            </View>
+            {product.trayEnabled ? (
+              <View style={styles.field}>
+                <Text style={styles.label}>Bandejas ({product.unitsPerTray} ud.)</Text>
+                <TextInput
+                  style={styles.qtyInput}
+                  keyboardType="number-pad"
+                  returnKeyType="done"
+                  value={traysInput}
+                  onChangeText={setTraysInput}
+                />
+              </View>
+            ) : null}
           </View>
-        ) : null}
-      </View>
 
-      {product.trayEnabled && norm.totalUnits > 0 ? (
-        <Text style={styles.summary}>
-          {norm.trays} bandejas × {product.unitsPerTray} = {norm.trays * product.unitsPerTray} ud. +{' '}
-          {norm.looseUnits} sueltas = {norm.totalUnits} unidades en total
-        </Text>
-      ) : null}
+          {product.trayEnabled && norm.totalUnits > 0 ? (
+            <Text style={styles.summary}>
+              {norm.trays} bandejas × {product.unitsPerTray} = {norm.trays * product.unitsPerTray} ud. +{' '}
+              {norm.looseUnits} sueltas = {norm.totalUnits} unidades en total
+            </Text>
+          ) : null}
 
-      <TouchableOpacity
-        style={[styles.addButton, buttonDisabled && styles.addButtonDisabled]}
-        onPress={apply}
-        disabled={buttonDisabled}
-      >
-        <Text style={styles.addButtonText}>{buttonLabel}</Text>
-      </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.addButton, buttonDisabled && styles.addButtonDisabled]}
+            onPress={apply}
+            disabled={buttonDisabled}
+          >
+            <Text style={styles.addButtonText}>{buttonLabel}</Text>
+          </TouchableOpacity>
+        </>
+      )}
     </View>
   );
 }
