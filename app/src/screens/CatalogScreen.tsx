@@ -81,6 +81,7 @@ export default function CatalogScreen({ navigation }: any) {
           data={products}
           keyExtractor={(item) => String(item.id)}
           contentContainerStyle={{ padding: 12 }}
+          keyboardShouldPersistTaps="handled"
           renderItem={({ item }) => (
             <ProductCard product={item} onPress={() => navigation.navigate('ProductDetail', { product: item })} />
           )}

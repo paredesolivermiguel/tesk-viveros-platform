@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, Image, Keyboard } from 'react-native';
 import { normalizeTrayUnits } from '../trays';
 import { useCart } from '../context/CartContext';
 
@@ -37,6 +37,7 @@ export default function ProductCard({ product, onPress }: { product: Product; on
   const yaEnCarrito = !!inCart;
 
   function apply() {
+    Keyboard.dismiss();
     if (norm.totalUnits === 0) {
       if (yaEnCarrito) remove(product.id);
       return;
@@ -89,6 +90,7 @@ export default function ProductCard({ product, onPress }: { product: Product; on
           <TextInput
             style={styles.qtyInput}
             keyboardType="number-pad"
+            returnKeyType="done"
             value={unitsInput}
             onChangeText={setUnitsInput}
           />
@@ -99,6 +101,7 @@ export default function ProductCard({ product, onPress }: { product: Product; on
             <TextInput
               style={styles.qtyInput}
               keyboardType="number-pad"
+              returnKeyType="done"
               value={traysInput}
               onChangeText={setTraysInput}
             />
