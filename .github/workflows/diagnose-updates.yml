@@ -22,30 +22,12 @@ jobs:
       - name: Instalar EAS CLI
         run: npm install -g eas-cli
 
-      - name: Vincular proyecto con la cuenta de Expo
+      - name: Vincular proyecto y mostrar projectId
         working-directory: app
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-        run: eas init --non-interactive --force
-
-      - name: Ver info del proyecto (projectId real)
-        working-directory: app
-        run: cat app.json
-
-      - name: Simular la peticion exacta que hace la app instalada
-        working-directory: app
         run: |
-          set -x
-          PROJECT_ID=$(node -e "console.log(require('./app.json').expo.extra.eas.projectId)")
-          echo "Project ID: $PROJECT_ID"
-          curl -s -D - -o /tmp/manifest.json \
-            -H "expo-platform: android" \
-            -H "expo-runtime-version: 1.0.0" \
-            -H "expo-channel-name: preview" \
-            -H "expo-protocol-version: 1" \
-            -H "expo-json-error: true" \
-            "https://u.expo.dev/$PROJECT_ID"
-          echo ""
-          echo "== CUERPO DE LA RESPUESTA =="
-          cat /tmp/manifest.json
+          eas init --non-interactive --force
+          echo "== app.json tras eas init =="
+          cat app.json
 
